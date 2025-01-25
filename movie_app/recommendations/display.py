@@ -34,10 +34,27 @@ def recommendations_tab(df):
 
     # Get query parameters
     query_params = st.query_params
-    selected_movies = query_params.get_all('movies')
+    selected_movies = query_params.get_all('movies') or []
 
-    # Multiselect with all movie titles with years
-    selected_movies = st.multiselect("Select movies or input file:", list(movie_options.keys()), default=selected_movies)
+    # Ensure at least 4 select boxes
+    while len(selected_movies) < 4:
+        selected_movies.append("")
+
+    # Create select boxes dynamically based on the number of selected movies
+    rows = [st.columns(2) for _ in range((len(selected_movies) + 1) // 2)]
+    for i in range(len(selected_movies)):
+        with rows[i // 2][i % 2]:
+            options = [""] + list(movie_options.keys())
+            index = 0 if i >= len(selected_movies) else options.index(selected_movies[i])
+            selected_movie = st.selectbox(f"Selected Movie {i+1}:", options, index=index)
+            if selected_movie and selected_movie != "":
+                selected_movies[i] = selected_movie
+
+    # Add new movie button
+    if st.button("Add Movie"):
+        selected_movies.append("")
+        st.query_params.update(movies=selected_movies)
+        st.rerun()
 
     with st.expander("Select Filters"):
         # Slider for vote_average filter
@@ -56,7 +73,27 @@ def recommendations_tab(df):
         genre_options = df['genres'].str.split(', ').explode().unique()
         genre_filters = st.multiselect("Select Genres:", options=genre_options)
 
-    # File uploader
+    # Update query parameters
+    if selected_movies:
+        st.query_params.update(movies=selected_movies)
+
+    if selected_movies:
+        selected_movie_ids = [movie_options[movie] for movie in selected_movies if movie]
+        st.write("Top Recommendations:")
+        recommendations = get_recommendations_by_ids(selected_movie_ids, min_rating, max_rating, df, language_filter, runtime_max, release_year_range, genre_filters)
+        if not recommendations.empty:
+            rows = [st.columns(3) for _ in range(2)]
+            for i, (_, movie) in enumerate(recommendations.head(6).iterrows()):
+                with rows[i // 3][i % 3]:
+                    if st.button(f"**{movie['original_title']} ({movie['release_year']})**", key=f"title_{movie['id']}"):
+                        selected_movies.append(f"{movie['original_title']} ({movie['release_year']})")
+                        st.query_params.update(movies=selected_movies)
+                        st.rerun()
+
+                    st.image(movie['poster_path'], width=150)
+                    st.write(f"{movie['runtime']} min | Rating: {movie['vote_average']:.2f}")
+
+    # File uploader at the bottom
     uploaded_entries = upload_file(movie_options)
     if uploaded_entries:
         selected_movies.extend(uploaded_entries)
@@ -65,21 +102,3 @@ def recommendations_tab(df):
     if st.button("Clear all"):
         st.query_params.clear()
         st.rerun()
-
-    # Update query parameters
-    if selected_movies:
-        st.query_params.movies = selected_movies
-
-    if selected_movies:
-        selected_movie_ids = [movie_options[movie] for movie in selected_movies]
-        st.write("Top Recommendations:")
-        recommendations = get_recommendations_by_ids(selected_movie_ids, min_rating, max_rating, df, language_filter, runtime_max, release_year_range, genre_filters)
-        if not recommendations.empty:
-            rows = [st.columns(3) for _ in range(2)]
-            for i, (_, movie) in enumerate(recommendations.head(6).iterrows()):
-                with rows[i // 3][i % 3]:
-                    if st.button(f"**{movie['original_title']} ({movie['release_year']})**", key=f"title_{movie['id']}"):
-                        st.query_params.movies = selected_movies + [f"{movie['original_title']} ({movie['release_year']})"]
-                        st.rerun()
-                    st.image(movie['poster_path'], width=150)
-                    st.write(f"{movie['runtime']} min | Rating: {movie['vote_average']:.2f}")
