@@ -4,7 +4,6 @@ import streamlit as st
 from individual_movies import movie_data
 from recommendations import movie_recs
 
-
 # Create tabs
 tab1, tab2 = st.tabs(["Movie Data", "Recommendations"])
 
