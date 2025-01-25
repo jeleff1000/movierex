@@ -59,25 +59,31 @@ def recommendations_tab(df):
             st.rerun()
     with col2:
         if st.button("Clear all"):
+            st.session_state['vote_score_range'] = (0.0, 10.0)
+            st.session_state['language_filter'] = ""
+            st.session_state['runtime_max'] = 300
+            st.session_state['release_year_range'] = (1915, 2025)
+            st.session_state['genre_filters'] = []
+            st.session_state['movies'] = ["" for _ in range(4)]
             st.query_params.clear()
             st.rerun()
 
     with st.expander("Select Filters"):
         # Slider for vote_average filter
-        min_rating, max_rating = st.slider("Select Voter Score Range:", 0.0, 10.0, (0.0, 10.0), step=0.1)
+        min_rating, max_rating = st.slider("Select Voter Score Range:", 0.0, 10.0, (0.0, 10.0), step=0.1, key='vote_score_range')
 
         # Search bar for spoken_languages
-        language_filter = st.text_input("Search by Language:")
+        language_filter = st.text_input("Search by Language:", key='language_filter')
 
         # Number input for maximum runtime
-        runtime_max = st.number_input("Select Maximum Runtime (minutes):", min_value=0, max_value=300, value=300, step=1)
+        runtime_max = st.number_input("Select Maximum Runtime (minutes):", min_value=0, max_value=300, value=300, step=1, key='runtime_max')
 
         # Toggle range for release_year
-        release_year_range = st.slider("Select Release Year Range:", int(df['release_year'].min()), int(df['release_year'].max()), (int(df['release_year'].min()), int(df['release_year'].max())), step=1)
+        release_year_range = st.slider("Select Release Year Range:", 1915, 2025, (1915, 2025), step=1, key='release_year_range')
 
         # Multiselect for genre
         genre_options = df['genres'].str.split(', ').explode().unique()
-        genre_filters = st.multiselect("Select Genres:", options=genre_options)
+        genre_filters = st.multiselect("Select Genres:", options=genre_options, key='genre_filters')
 
     # Update query parameters
     if selected_movies:
