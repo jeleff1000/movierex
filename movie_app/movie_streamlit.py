@@ -18,10 +18,10 @@ from individual_movies import movie_data
 from recommendations.movie_recs import load_recommendations_tab
 
 # Create tabs
-tab1, tab2 = st.tabs(["Movie Data", "Recommendations"])
+tab1, tab2 = st.tabs(["Recommendations", "Movie Data"])
 
 with tab1:
+    load_recommendations_tab(movies_df)
+with tab2:
     movie_data.movie_info_tab(movies_df, people_df, movies_df)
 
-with tab2:
-    load_recommendations_tab(movies_df)
