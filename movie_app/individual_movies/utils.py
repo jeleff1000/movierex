@@ -28,8 +28,28 @@ def create_movie_buttons(recommendations, movie_details):
                 st.session_state.selected_movie = movie['original_title']
                 movie_name = movie['original_title'].replace(' ', '%20').replace('+', '%2B')
                 st.query_params.update({'movie': movie_name, 'year': movie['release_year']})
-                st.rerun()
+                st.write('<script>window.scrollTo(0, 0);</script>', unsafe_allow_html=True)
             col.markdown('</div>', unsafe_allow_html=True)
             similarity_explanation = get_similarity_explanation(movie_details, movie)
             with col.expander("Similarities"):
                 col.markdown(f"<div class='element'>{similarity_explanation}</div>", unsafe_allow_html=True)
+
+def create_movie_dropdown(movies, person_details):
+    """Create a dropdown menu for movies."""
+    actor_name = person_details['name']
+    matched_movies = movies[movies['cast'].str.contains(actor_name, na=False)]
+
+    if matched_movies.empty:
+        st.error(f"No movies found for actor: {actor_name}")
+        return
+    movie_names = [f"{movie['original_title']} ({movie['release_year']})" for _, movie in matched_movies.iterrows()]
+    options = ["Select a movie"] + movie_names
+    selected_movie = st.selectbox("", options)
+    if selected_movie != "Select a movie":
+        movie_title, movie_year = selected_movie.rsplit(' (', 1)
+        movie_year = movie_year.rstrip(')')
+        movie = matched_movies[(matched_movies['original_title'] == movie_title) & (matched_movies['release_year'] == int(movie_year))].iloc[0]
+        movie_name = movie['original_title'].replace(' ', '%20').replace('+', '%2B')
+        st.query_params.update({'movie': movie_name, 'year': movie['release_year']})
+        st.write('<script>window.scrollTo(0, 0);</script>', unsafe_allow_html=True)
+    return ''

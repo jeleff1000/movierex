@@ -5,7 +5,7 @@ from .cast_crew_data import display_people_details
 from .movie_details import display_movie_details
 from .utils import create_person_dropdown
 
-def movie_info_tab(df, people_df):
+def movie_info_tab(df, people_df, movies_df):
     """Render the movie info tab in Streamlit."""
     st.title('Movie Information')
 
@@ -47,4 +47,4 @@ def movie_info_tab(df, people_df):
 
     # Display cast and crew details
     st.markdown("---")
-    display_people_details(people_df)
+    display_people_details(people_df, movies_df)

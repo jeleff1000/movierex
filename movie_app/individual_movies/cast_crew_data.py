@@ -1,8 +1,13 @@
 import streamlit as st
 import pandas as pd
+from .utils import create_movie_dropdown
 
-def display_people_details(df):
+def display_people_details(df, movies_df):
     """Display key details of people."""
+
+    # Ensure this is placed at the beginning of your script
+    if 'rerun_done' not in st.session_state:
+        st.session_state.rerun_done = False
 
     # Get query parameters
     query_params = st.query_params
@@ -16,8 +21,10 @@ def display_people_details(df):
     selected_person = st.selectbox("", all_people_names, index=all_people_names.index(selected_person) if selected_person in all_people_names else 0)
 
     # Update query parameters when a person is selected
-    if selected_person:
+    if selected_person and not st.session_state.rerun_done:
         st.query_params.person = selected_person
+        st.session_state.rerun_done = True
+        st.rerun()
 
     # Display selected person details
     if selected_person:
@@ -37,24 +44,13 @@ def display_people_details(df):
             st.markdown(f"**Known For:** {person_details['known_for_department']}")
             st.markdown(f"**Place of Birth:** {person_details['place_of_birth']}")
 
-        # Display movie credits with expand option
-        movie_credits = person_details['movie_credits'].split(', ')
+        # Display movie credits as a dropdown
         st.markdown("**Movie Credits:**")
-        st.markdown(", ".join(movie_credits[:5]))
-        if len(movie_credits) > 5:
-            with st.expander("Show more movie credits"):
-                st.markdown(", ".join(movie_credits[5:]))
-
-        # Display TV credits with expand option
-        tv_credits = person_details['tv_credits'].split(', ')
-        st.markdown("**TV Credits:**")
-        st.markdown(", ".join(tv_credits[:5]))
-        if len(tv_credits) > 5:
-            with st.expander("Show more TV credits"):
-                st.markdown(", ".join(tv_credits[5:]))
+        create_movie_dropdown(movies_df, person_details)
 
 # Ensure this function call is placed correctly within your Streamlit script
 if __name__ == "__main__":
-    # Load the Parquet file
+    # Load the Parquet files
     people_df = pd.read_parquet('individual_movies/people_details.parquet')
-    display_people_details(people_df)
+    movies_df = pd.read_parquet('movies_details.parquet')
+    display_people_details(people_df, movies_df)
