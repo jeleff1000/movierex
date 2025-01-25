@@ -1,2 +1,3 @@
-docx
-difflib
+streamlit
+pandas
+python-docx
