@@ -50,11 +50,17 @@ def recommendations_tab(df):
             if selected_movie and selected_movie != "":
                 selected_movies[i] = selected_movie
 
-    # Add new movie button
-    if st.button("Add Movie"):
-        selected_movies.append("")
-        st.query_params.update(movies=selected_movies)
-        st.rerun()
+    # Add new movie and clear all buttons
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Add Movie"):
+            selected_movies.append("")
+            st.query_params.update(movies=selected_movies)
+            st.rerun()
+    with col2:
+        if st.button("Clear all"):
+            st.query_params.clear()
+            st.rerun()
 
     with st.expander("Select Filters"):
         # Slider for vote_average filter
@@ -86,7 +92,12 @@ def recommendations_tab(df):
             for i, (_, movie) in enumerate(recommendations.head(6).iterrows()):
                 with rows[i // 3][i % 3]:
                     if st.button(f"**{movie['original_title']} ({movie['release_year']})**", key=f"title_{movie['id']}"):
-                        selected_movies.append(f"{movie['original_title']} ({movie['release_year']})")
+                        # Find the first empty select box
+                        empty_index = next((index for index, value in enumerate(selected_movies) if value == ""), len(selected_movies))
+                        if empty_index < len(selected_movies):
+                            selected_movies[empty_index] = f"{movie['original_title']} ({movie['release_year']})"
+                        else:
+                            selected_movies.append(f"{movie['original_title']} ({movie['release_year']})")
                         st.query_params.update(movies=selected_movies)
                         st.rerun()
 
@@ -97,8 +108,3 @@ def recommendations_tab(df):
     uploaded_entries = upload_file(movie_options)
     if uploaded_entries:
         selected_movies.extend(uploaded_entries)
-
-    # Clear all button
-    if st.button("Clear all"):
-        st.query_params.clear()
-        st.rerun()
