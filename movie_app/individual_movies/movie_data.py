@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import urllib.parse
-from individual_movies.cast_crew_data import display_people_details
+from .cast_crew_data import display_people_details
 
 # Load the Parquet files
 parquet_file_path = 'movies_details.parquet'
