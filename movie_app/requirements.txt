@@ -1,2 +1,2 @@
-import docx
-import difflib
+docx
+difflib
