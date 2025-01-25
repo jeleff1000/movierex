@@ -1,12 +1,6 @@
 import pandas as pd
 import streamlit as st
 
-# Define the relative path to the Parquet file
-parquet_file_path = 'movies_details.parquet'
-
-# Load the Parquet file into a DataFrame
-df = pd.read_parquet(parquet_file_path)
-
 # Function to calculate Jaccard similarity score
 def jaccard_similarity(list1, list2):
     """Calculate Jaccard similarity between two lists."""
@@ -43,7 +37,7 @@ def calculate_similarity(movie1, movie2):
     return similarity_score
 
 # Function to get recommendations based on selected movie IDs
-def get_recommendations_by_ids(movie_ids, min_rating, max_rating):
+def get_recommendations_by_ids(movie_ids, min_rating, max_rating, df):
     """Get recommendations for multiple movies based on their IDs and rating filter."""
     selected_movies = df[df['id'].isin(movie_ids)]
     if not selected_movies.empty:
@@ -58,7 +52,7 @@ def get_recommendations_by_ids(movie_ids, min_rating, max_rating):
         return pd.DataFrame()
 
 # Streamlit app to display the recommendations
-def recommendations_tab():
+def recommendations_tab(df):
     """Render the recommendations tab in Streamlit."""
     st.title('Movie Recommendations')
 
@@ -88,7 +82,7 @@ def recommendations_tab():
     if selected_movies:
         selected_movie_ids = [movie_options[movie] for movie in selected_movies]
         st.write("Top Recommendations:")
-        recommendations = get_recommendations_by_ids(selected_movie_ids, min_rating, max_rating)
+        recommendations = get_recommendations_by_ids(selected_movie_ids, min_rating, max_rating, df)
         if not recommendations.empty:
             rows = [st.columns(3) for _ in range(2)]
             for i, (_, movie) in enumerate(recommendations.head(6).iterrows()):
@@ -100,4 +94,6 @@ def recommendations_tab():
                     st.write(f"{movie['runtime']} min | Rating: {movie['vote_average']:.2f}")
 
 if __name__ == "__main__":
-    recommendations_tab()
+    # Load the Parquet file
+    movies_df = pd.read_parquet('movies_details.parquet')
+    recommendations_tab(movies_df)

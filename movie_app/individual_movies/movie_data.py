@@ -3,12 +3,7 @@ import pandas as pd
 import urllib.parse
 from .cast_crew_data import display_people_details
 
-# Load the Parquet files
-parquet_file_path = 'movies_details.parquet'
-df = pd.read_parquet(parquet_file_path)
-people_df = pd.read_parquet('people_details.parquet')
-
-def create_person_buttons(names):
+def create_person_buttons(names, people_df):
     """Create buttons for names that exist in the people_details database."""
     names_list = names.split(', ')
     buttons = []
@@ -24,7 +19,7 @@ def create_person_buttons(names):
             buttons.append(name)
     return ' '.join(buttons)
 
-def display_movie_details(movie_title, movie_year):
+def display_movie_details(movie_title, movie_year, df, people_df):
     """Display the details of the selected movie."""
     movie_details = df[(df['original_title'].str.lower() == movie_title.lower()) & (df['release_year'] == movie_year)]
     if movie_details.empty:
@@ -113,7 +108,7 @@ def display_movie_details(movie_title, movie_year):
 
         # Row 4: Cast and Overview
         st.markdown("<div class='tiny-header'>Cast and Overview</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='element small-button'>{create_person_buttons(', '.join(movie_details['cast'].split(', ')[:10]) + ', ' + movie_details['directors'])}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='element small-button'>{create_person_buttons(', '.join(movie_details['cast'].split(', ')[:10]) + ', ' + movie_details['directors'], people_df)}</div>", unsafe_allow_html=True)
         st.markdown(f"<div class='element'>{movie_details['overview']}</div>", unsafe_allow_html=True)
 
     # Row 5: Trailer
@@ -122,7 +117,7 @@ def display_movie_details(movie_title, movie_year):
 
     # Row 6: Recommendations and Similar Movies
     st.markdown("<div class='tiny-header'>Recommendations and Similar Movies</div>", unsafe_allow_html=True)
-    recommendations = get_recommendations_by_name(movie_details['original_title'])
+    recommendations = get_recommendations_by_name(movie_details['original_title'], df)
     if not recommendations.empty:
         all_cols = st.columns(min(len(recommendations), 5))
         for col, (_, movie) in zip(all_cols, recommendations.head(5).iterrows()):
@@ -167,7 +162,7 @@ def get_similarity_explanation(movie1, movie2):
 
     return "\n".join(explanations) if explanations else "No significant similarities"
 
-def get_recommendations_by_name(movie_name):
+def get_recommendations_by_name(movie_name, df):
     """Get recommendations for a movie based on its name."""
     movie_name = movie_name.split(' (')[0]
     movie = df[df['original_title'].str.contains(movie_name, case=False, na=False)]
@@ -213,7 +208,7 @@ def jaccard_similarity(list1, list2):
     union = len(set(list1).union(set(list2)))
     return intersection / union if union != 0 else 0
 
-def movie_info_tab():
+def movie_info_tab(df, people_df):
     """Render the movie info tab in Streamlit."""
     st.title('Movie Information')
 
@@ -235,7 +230,9 @@ def movie_info_tab():
     all_movie_titles_with_year_sorted = sorted(all_movie_titles_with_year)
 
     # Dropdown with all movie titles with years
-    selected_movie_with_year = st.selectbox("", [""] + all_movie_titles_with_year_sorted, index=all_movie_titles_with_year_sorted.index(f"{movie_from_url} ({year_from_url})") + 1 if movie_from_url and year_from_url else 0)
+    selected_movie_with_year = st.selectbox("", [""] + all_movie_titles_with_year_sorted,
+                                            index=all_movie_titles_with_year_sorted.index(
+                                                f"{movie_from_url} ({year_from_url})") + 1 if movie_from_url and year_from_url else 0)
 
     # Extract the movie title and year from the selected option
     if selected_movie_with_year:
@@ -249,11 +246,8 @@ def movie_info_tab():
         st.session_state.selected_movie = selected_movie
         movie_name = selected_movie.replace(' ', '%20').replace('+', '%2B')
         st.query_params.update({'movie': movie_name, 'year': selected_year})
-        display_movie_details(selected_movie, selected_year)
+        display_movie_details(selected_movie, selected_year, df, people_df)
 
     # Display cast and crew details
     st.markdown("---")
-    display_people_details()
-
-if __name__ == "__main__":
-    movie_info_tab()
+    display_people_details(people_df)

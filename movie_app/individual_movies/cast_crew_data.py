@@ -1,13 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-# Define the relative path to the Parquet file
-parquet_file_path = 'individual_movies/people_details.parquet'
-
-# Load the Parquet file
-df = pd.read_parquet(parquet_file_path)
-
-def display_people_details():
+def display_people_details(df):
     """Display key details of people."""
     st.title('Cast and Crew Details')
 
@@ -59,4 +53,6 @@ def display_people_details():
 
 # Ensure this function call is placed correctly within your Streamlit script
 if __name__ == "__main__":
-    display_people_details()
+    # Load the Parquet file
+    people_df = pd.read_parquet('individual_movies/people_details.parquet')
+    display_people_details(people_df)
