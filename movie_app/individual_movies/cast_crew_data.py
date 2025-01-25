@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 
 # Define the relative path to the Parquet file
-parquet_file_path = 'people_details.parquet'
+parquet_file_path = 'movie_app/people_details.parquet'
 
 # Load the Parquet file
 df = pd.read_parquet(parquet_file_path)
