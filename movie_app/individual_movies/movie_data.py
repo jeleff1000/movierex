@@ -3,7 +3,7 @@ import pandas as pd
 import urllib.parse
 from .cast_crew_data import display_people_details
 from .movie_details import display_movie_details
-from .utils import create_person_buttons
+from .utils import create_person_dropdown
 
 def movie_info_tab(df, people_df):
     """Render the movie info tab in Streamlit."""

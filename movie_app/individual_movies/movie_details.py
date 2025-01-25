@@ -1,7 +1,8 @@
+# movie_details.py
 import streamlit as st
 import pandas as pd
 from .similarity import calculate_similarity, get_similarity_explanation, get_recommendations_by_name
-from .utils import create_person_buttons
+from .utils import create_person_dropdown, create_movie_buttons
 
 def display_movie_details(movie_title, movie_year, df, people_df):
     """Display the details of the selected movie."""
@@ -90,9 +91,8 @@ def display_movie_details(movie_title, movie_year, df, people_df):
         row6_col2.markdown(f"<div class='element'>{movie_details['revenue']}</div>", unsafe_allow_html=True)
         row6_col3.markdown(f"<div class='element'>{movie_details['directors']}</div>", unsafe_allow_html=True)
 
-        # Row 4: Cast and Overview
-        st.markdown("<div class='tiny-header'>Cast and Overview</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='element small-button'>{create_person_buttons(', '.join(movie_details['cast'].split(', ')[:8]) + ', ' + movie_details['directors'], people_df)}</div>", unsafe_allow_html=True)
+        # Row 4: Overview
+        st.markdown("<div class='tiny-header'>Overview</div>", unsafe_allow_html=True)
         st.markdown(f"<div class='element'>{movie_details['overview']}</div>", unsafe_allow_html=True)
 
     # Row 5: Trailer
@@ -103,18 +103,7 @@ def display_movie_details(movie_title, movie_year, df, people_df):
     st.markdown("<div class='tiny-header'>Recommendations and Similar Movies</div>", unsafe_allow_html=True)
     recommendations = get_recommendations_by_name(movie_details['original_title'], df)
     if not recommendations.empty:
-        all_cols = st.columns(min(len(recommendations), 5))
-        for col, (_, movie) in zip(all_cols, recommendations.head(5).iterrows()):
-            with col:
-                col.markdown(f"<div class='center-content'><div class='element one-line-title'>{movie['original_title']}</div><div class='year'>{movie['release_year']}</div></div>", unsafe_allow_html=True)
-                col.image(movie['poster_path'], use_container_width=True)
-                col.markdown('<div class="center-content">', unsafe_allow_html=True)
-                if col.button("Select", key=f"select_{movie['id']}"):
-                    st.session_state.selected_movie = movie['original_title']
-                    movie_name = movie['original_title'].replace(' ', '%20').replace('+', '%2B')
-                    st.query_params.update({'movie': movie_name, 'year': movie['release_year']})
-                    st.rerun()
-                col.markdown('</div>', unsafe_allow_html=True)
-                similarity_explanation = get_similarity_explanation(movie_details, movie)
-                with col.expander("Similarities"):
-                    col.markdown(f"<div class='element'>{similarity_explanation}</div>", unsafe_allow_html=True)
+        create_movie_buttons(recommendations, movie_details)
+    # Row 7: Cast
+    st.markdown("<div class='tiny-header'>Cast</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='element small-button'>{create_person_dropdown(', '.join(movie_details['cast'].split(', ')[:9]), people_df)}</div>", unsafe_allow_html=True)

@@ -3,11 +3,13 @@ import pandas as pd
 
 def display_people_details(df):
     """Display key details of people."""
-    st.title('Cast and Crew Details')
 
     # Get query parameters
     query_params = st.query_params
     selected_person = query_params.get("person", "")
+
+    # Display header above the dropdown with reduced margin
+    st.markdown("<h4 style='margin-bottom: 5px;'>Search All Actors</h4>", unsafe_allow_html=True)
 
     # Dropdown with all people names
     all_people_names = [""] + sorted(df['name'].tolist())
