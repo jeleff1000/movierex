@@ -1,9 +1,17 @@
 import streamlit as st
 import pandas as pd
+import os
+
+# Get the current working directory
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Construct the full paths to the Parquet files
+people_file_path = os.path.join(current_dir, 'people_details.parquet')
+movies_file_path = os.path.join(current_dir, 'movies_details.parquet')
 
 # Load the Parquet files
-people_df = pd.read_parquet('people_details.parquet')
-movies_df = pd.read_parquet('movies_details.parquet')
+people_df = pd.read_parquet(people_file_path)
+movies_df = pd.read_parquet(movies_file_path)
 
 # Import the modules using relative imports
 from individual_movies import movie_data
