@@ -4,19 +4,42 @@ from .similarity_calculator import calculate_similarity
 from .input_file import upload_file
 
 # Function to get recommendations based on selected movie IDs
-def get_recommendations_by_ids(movie_ids, min_rating, max_rating, df, language_filter, runtime_max, release_year_range, genre_filters):
+def get_recommendations_by_ids(movie_ids, star_rating, fame_level, df, language_filter, runtime_max, release_year_range, genre_filters):
     """Get recommendations for multiple movies based on their IDs and various filters."""
     selected_movies = df[df['id'].isin(movie_ids)]
     if not selected_movies.empty:
         df['similarity'] = df.apply(lambda x: sum(calculate_similarity(movie, x) for _, movie in selected_movies.iterrows()), axis=1)
         recommendations = df.sort_values(by='similarity', ascending=False)
-        recommendations = recommendations[(recommendations['vote_average'] >= min_rating) & (recommendations['vote_average'] <= max_rating)]
+
+        # Calculate the percentile rank and convert to a 5-star scale
+        recommendations['percentile_rank'] = recommendations['vote_average'].rank(pct=True)
+        recommendations['star_rating'] = recommendations['percentile_rank'] * 5
+
+        # Filter by star rating
+        recommendations = recommendations[recommendations['star_rating'] >= star_rating]
+
+        # Filter by fame level
+        if fame_level == "Very Obscure":
+            recommendations = recommendations[recommendations['vote_count'] <= 1499]
+        elif fame_level == "Obscure":
+            recommendations = recommendations[recommendations['vote_count'] <= 3000]
+        elif fame_level == "Moderate":
+            recommendations = recommendations[recommendations['vote_count'] <= 7000]
+        elif fame_level == "Famous":
+            recommendations = recommendations[recommendations['vote_count'] <= 9000]
+        elif fame_level == "Very Famous":
+            recommendations = recommendations
+
         recommendations = recommendations[recommendations['spoken_languages'].str.contains(language_filter, case=False, na=False)]
-        recommendations = recommendations[df['runtime'] <= runtime_max]
+        recommendations = recommendations[recommendations['runtime'] <= runtime_max]
         recommendations = recommendations[(recommendations['release_year'] >= release_year_range[0]) & (recommendations['release_year'] <= release_year_range[1])]
         if genre_filters:
             recommendations = recommendations[recommendations['genres'].apply(lambda x: all(genre in x for genre in genre_filters))]
         recommendations = recommendations[~((recommendations['vote_average'] > 6.5) & (recommendations['vote_count'] < 500))]
+
+        # Remove duplicate belongs_to_id values
+        recommendations = recommendations.drop_duplicates(subset='belongs_to_id', keep='first')
+
         recommendations = recommendations.head(7)
         recommendations = recommendations[~recommendations['id'].isin(movie_ids)]
         return recommendations
@@ -59,7 +82,8 @@ def recommendations_tab(df):
             st.rerun()
     with col2:
         if st.button("Clear all"):
-            st.session_state['vote_score_range'] = (0.0, 10.0)
+            st.session_state['star_rating'] = 0  # Default to 1 star (index 0)
+            st.session_state['fame_level'] = "Very Famous"  # Default to Very Famous
             st.session_state['language_filter'] = ""
             st.session_state['runtime_max'] = 300
             st.session_state['release_year_range'] = (1915, 2025)
@@ -69,8 +93,19 @@ def recommendations_tab(df):
             st.rerun()
 
     with st.expander("Select Filters"):
-        # Slider for vote_average filter
-        min_rating, max_rating = st.slider("Select Voter Score Range:", 0.0, 10.0, (0.0, 10.0), step=0.1, key='vote_score_range')
+        # Star rating filter
+        st.markdown("**Minimum Rating**")
+        if 'star_rating' not in st.session_state:
+            st.session_state['star_rating'] = 0  # Default to 1 star (index 0)
+        star_rating = st.feedback("stars", key='star_rating')
+        if star_rating is not None:
+            star_rating += 1  # Convert to 1-based index
+
+        # Fame level filter
+        st.markdown("**Maximum Fame Allowed**")
+        if 'fame_level' not in st.session_state:
+            st.session_state['fame_level'] = "Very Famous"  # Default to Very Famous
+        fame_level = st.select_slider("Select Fame Level:", options=["Very Obscure", "Obscure", "Moderate", "Famous", "Very Famous"], key='fame_level')
 
         # Search bar for spoken_languages
         language_filter = st.text_input("Search by Language:", key='language_filter')
@@ -92,7 +127,7 @@ def recommendations_tab(df):
     if selected_movies:
         selected_movie_ids = [movie_options[movie] for movie in selected_movies if movie]
         st.write("Top Recommendations:")
-        recommendations = get_recommendations_by_ids(selected_movie_ids, min_rating, max_rating, df, language_filter, runtime_max, release_year_range, genre_filters)
+        recommendations = get_recommendations_by_ids(selected_movie_ids, star_rating, fame_level, df, language_filter, runtime_max, release_year_range, genre_filters)
         if not recommendations.empty:
             rows = [st.columns(3) for _ in range(2)]
             for i, (_, movie) in enumerate(recommendations.head(6).iterrows()):
@@ -108,7 +143,10 @@ def recommendations_tab(df):
                         st.rerun()
 
                     st.image(movie['poster_path'], width=150)
-                    st.write(f"{movie['runtime']} min | Rating: {movie['vote_average']:.2f}")
+                    # Calculate the percentile rank and convert to a 5-star scale
+                    percentile_rank = recommendations['percentile_rank'][recommendations['id'] == movie['id']].values[0]
+                    stars = percentile_rank * 5
+                    st.write(f"{movie['runtime']} min | Rating: {stars:.2f} stars")
 
     # File uploader at the bottom
     uploaded_entries = upload_file(movie_options)
