@@ -79,9 +79,9 @@ def recommendations_tab(df):
         if st.button("Add Movie"):
             selected_movies.append("")
             st.query_params.update(movies=selected_movies)
-            st.rerun()
     with col2:
         if st.button("Clear all"):
+            selected_movies.clear()
             st.session_state['star_rating'] = 0  # Default to 1 star (index 0)
             st.session_state['fame_level'] = "Very Famous"  # Default to Very Famous
             st.session_state['language_filter'] = ""
@@ -90,7 +90,6 @@ def recommendations_tab(df):
             st.session_state['genre_filters'] = []
             st.session_state['movies'] = ["" for _ in range(4)]
             st.query_params.clear()
-            st.rerun()
 
     with st.expander("Select Filters"):
         # Star rating filter
@@ -117,7 +116,7 @@ def recommendations_tab(df):
         release_year_range = st.slider("Select Release Year Range:", 1915, 2025, (1915, 2025), step=1, key='release_year_range')
 
         # Multiselect for genre
-        genre_options = df['genres'].str.split(', ').explode().unique()
+        genre_options = sorted(df['genres'].str.split(', ').explode().unique())
         genre_filters = st.multiselect("Select Genres:", options=genre_options, key='genre_filters')
 
     # Update query parameters
@@ -149,6 +148,18 @@ def recommendations_tab(df):
                     st.write(f"{movie['runtime']} min | Rating: {stars:.2f} stars")
 
     # File uploader at the bottom
-    uploaded_entries = upload_file(movie_options)
+    uploaded_entries = upload_file(movie_options, key='file_uploader_1')
     if uploaded_entries:
-        selected_movies.extend(uploaded_entries)
+        for entry in uploaded_entries:
+            if entry not in selected_movies:
+                selected_movies.append(entry)
+
+    # Always show the search button
+    if st.button("Search"):
+        uploaded_entries = upload_file(movie_options, key='file_uploader_2')
+        if uploaded_entries:
+            for entry in uploaded_entries:
+                if entry not in selected_movies:
+                    selected_movies.append(entry)
+        st.query_params.update(movies=selected_movies)
+        st.rerun()
